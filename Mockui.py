@@ -163,48 +163,49 @@ def main():
             with st.chat_message(name="user", avatar="user"):
                 user_input = st.text_area("Enter your question about the data:")
 
-            button_column = st.columns(3)
-            button_info = st.empty()
+            submit_col, upvote_col, downvote_col = st.columns(3)
 
-            with button_column[2]:
-                if st.form_submit_button("🚀 Generate SQL"):
-                    if user_input:
-                        try:
-                            with st.spinner("Generating SQL..."):
-                                sql_response = generate_sql(user_input)
-                            with st.chat_message(name="assistant", avatar="assistant"):
-                                st.code(sql_response, language="sql")
-                            cursor_result = execute_query(sql_response)
-                            result_df = cursor_result.fetch_pandas_all()
-                            with st.chat_message(name="assistant", avatar="assistant"):
-                                st.dataframe(result_df)
-                            handle_interaction(user_input, sql_response)
-                            add_to_chat_history(user_input, sql_response, result_df)
-                            # Clear the input field
-                            st.session_state.user_input = ""
-                        except Exception as e:
-                            logging.error(f"Error processing query: {str(e)}")
-                            st.error("An error occurred while processing your query. Please try again.")
+            with submit_col:
+                submit_button = st.form_submit_button("🚀 Generate SQL")
 
-            with button_column[1]:
+            with upvote_col:
                 if st.button("👍 Upvote", key="upvote", use_container_width=True):
                     if st.session_state.get('last_question'):
                         if update_feedback('upvote', st.session_state['last_question']):
-                            button_info.success("Thanks for your feedback! NeuroFlake Memory updated")
+                            st.success("Thanks for your feedback! NeuroFlake Memory updated")
                         else:
-                            button_info.error("Failed to update feedback. Please try again.")
+                            st.error("Failed to update feedback. Please try again.")
                     else:
-                        button_info.warning("No recent question to upvote.")
+                        st.warning("No recent question to upvote.")
 
-            with button_column[0]:
+            with downvote_col:
                 if st.button("👎 Downvote", key="downvote", use_container_width=True):
                     if st.session_state.get('last_question'):
                         if update_feedback('downvote', st.session_state['last_question']):
-                            button_info.warning("We're sorry the result wasn't helpful. Your feedback will help us improve!")
+                            st.warning("We're sorry the result wasn't helpful. Your feedback will help us improve!")
                         else:
-                            button_info.error("Failed to update feedback. Please try again.")
+                            st.error("Failed to update feedback. Please try again.")
                     else:
-                        button_info.warning("No recent question to downvote.")
+                        st.warning("No recent question to downvote.")
+
+            if submit_button:
+                if user_input:
+                    try:
+                        with st.spinner("Generating SQL..."):
+                            sql_response = generate_sql(user_input)
+                        with st.chat_message(name="assistant", avatar="assistant"):
+                            st.code(sql_response, language="sql")
+                        cursor_result = execute_query(sql_response)
+                        result_df = cursor_result.fetch_pandas_all()
+                        with st.chat_message(name="assistant", avatar="assistant"):
+                            st.dataframe(result_df)
+                        handle_interaction(user_input, sql_response)
+                        add_to_chat_history(user_input, sql_response, result_df)
+                        # Clear the input field
+                        st.session_state.user_input = ""
+                    except Exception as e:
+                        logging.error(f"Error processing query: {str(e)}")
+                        st.error("An error occurred while processing your query. Please try again.")
 
         st.markdown("##### Sample questions you can ask:")
         sample_questions = [
