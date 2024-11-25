@@ -1,56 +1,43 @@
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.metrics.pairwise import cosine_similarity
-import re
+from sentence_transformers import SentenceTransformer
+from scipy.spatial.cosine_similarity import cosine_similarity
 import numpy as np
 
-def preprocess_text(text):
+def check_similarity(message1, message2, threshold=0.7):
     """
-    Preprocess the text by converting to lowercase and removing special characters
-    """
-    # Convert to lowercase
-    text = text.lower()
-    # Remove special characters and extra whitespace
-    text = re.sub(r'[^\w\s]', '', text)
-    text = ' '.join(text.split())
-    return text
-
-def calculate_similarity(text1, text2, threshold=0.5):
-    """
-    Calculate cosine similarity between two texts
+    Check similarity between two messages using sentence transformers.
+    Returns 'yes' if similarity is above threshold, 'no' otherwise.
+    
     Args:
-        text1 (str): First text
-        text2 (str): Second text
-        threshold (float): Similarity threshold (default: 0.5)
+        message1 (str): First message to compare
+        message2 (str): Second message to compare
+        threshold (float): Similarity threshold (default: 0.7)
+    
     Returns:
-        tuple: (similarity_score, is_similar)
+        str: 'yes' if messages are similar, 'no' otherwise
     """
-    # Preprocess texts
-    text1 = preprocess_text(text1)
-    text2 = preprocess_text(text2)
+    # Load the model
+    model = SentenceTransformer('all-MiniLM-L6-v2')
     
-    # Create TF-IDF vectorizer
-    vectorizer = TfidfVectorizer()
-    
-    # Fit and transform the texts
-    try:
-        tfidf_matrix = vectorizer.fit_transform([text1, text2])
-    except ValueError as e:
-        print(f"Error: {e}")
-        return 0.0, False
+    # Generate embeddings
+    embedding1 = model.encode([message1])[0]
+    embedding2 = model.encode([message2])[0]
     
     # Calculate cosine similarity
-    similarity = cosine_similarity(tfidf_matrix[0:1], tfidf_matrix[1:2])[0][0]
+    similarity = cosine_similarity([embedding1], [embedding2])[0][0]
     
-    # Determine if texts are similar based on threshold
-    is_similar = similarity >= threshold
-    
-    return similarity, is_similar
+    # Return result based on threshold
+    return "yes" if similarity >= threshold else "no"
 
 # Example usage
 if __name__ == "__main__":
-    text1 = "The quick brown fox jumps over the lazy dog"
-    text2 = "The fast brown fox leaps over the sleepy dog"
+    # Example messages
+    message1 = "Hello, how are you doing today?"
+    message2 = "Hi, how are you feeling today?"
+    message3 = "The weather is nice today."
     
-    similarity_score, is_similar = calculate_similarity(text1, text2)
-    print(f"Similarity score: {similarity_score:.2f}")
-    print(f"Are texts similar? {'Yes' if is_similar else 'No'}")
+    # Compare messages
+    print(f"Comparing message1 and message2:")
+    print(check_similarity(message1, message2))  # Should print "yes"
+    
+    print(f"\nComparing message1 and message3:")
+    print(check_similarity(message1, message3))  # Should print "no"
